@@ -177,7 +177,7 @@ mapMaybeMsf msf = MSF $ maybe ifNothing ifJust where
 -- | Applies a function to produce an additional side effect and passes the
 -- input unchanged.
 sideEffectMsf :: Functor m => (a -> m b) -> MSF m a a
-sideEffectMsf f = MSF $ \a -> f a <&> \ _ -> (a, sideEffectMsf f)
+sideEffectMsf f = MSF $ \a -> f a <&> \ (_, cont) -> (a, sideEffectMsf cont)
 
 -- In newer versions of Base, there is Functor. <&> operator
 pamf :: Functor m => m a -> (a -> b) -> m b

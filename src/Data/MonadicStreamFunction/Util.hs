@@ -69,9 +69,8 @@ iPre firsta = feedback firsta $ arr_msf swap
 -- | Preprends a fixed output to an 'MSF'. The first input is completely
 -- ignored.
 iPost :: Monad m => b -> MSF m a b -> MSF m a b
-iPost b sf = sf >>> (feedback (Just b) $ arr $ \(c, ac) -> case ac of
-  Nothing -> (c, Nothing)
-  Just b' -> (b', Nothing))
+iPost b sf = sf >>> feedback (Just b) (arr foo) where
+  foo (c, ac) = (maybe c id ac, Nothing)
 
 -- | Preprends a fixed output to an 'MSF', shifting the output.
 next :: Monad m => b -> MSF m a b -> MSF m a b
