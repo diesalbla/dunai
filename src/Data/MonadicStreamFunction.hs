@@ -39,6 +39,7 @@
 module Data.MonadicStreamFunction
   ( module Control.Arrow
   , module Data.MonadicStreamFunction.Core
+  , module Data.MonadicStreamFunction.KleisliCore
   , module Data.MonadicStreamFunction.Util
   )
  where
@@ -50,6 +51,7 @@ import Control.Arrow
 -- Internal
 
 import Data.MonadicStreamFunction.Core
+import Data.MonadicStreamFunction.KleisliCore
 import Data.MonadicStreamFunction.Util
 
 -- Internal (Instances)

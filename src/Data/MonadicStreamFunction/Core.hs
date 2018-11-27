@@ -72,17 +72,6 @@ instance Monad m => Arrow (MSF m) where
   arr   = arr_msf
   first = first_msf
 
--- * Functor and applicative instances
-
--- | 'Functor' instance for 'MSF's.
-instance Functor m => Functor (MSF m a) where
-  fmap = map_msf
-
--- | 'Applicative' instance72 for 'MSF's.
-instance Applicative m => Applicative (MSF m a) where
-  pure = pure_msf
-  (<*>) = ap_msf
-
 -- ** Lifting point-wise computations
 
 -- | Lifts a monadic computation into a Stream.
@@ -151,20 +140,3 @@ morphS = mapK
 --   where whnfVal p@(b,_) = b `seq` return p
 --
 -- and leave morphS as a lazy version (by default).
-
-
--- DAlonso: A Block of code needed to by-pass the lack of Functor-Applicative-Monad
-#if __GLASGOW_HASKELL__ < 710
-
-instance Applicative m => Functor m where
-  fmap f = (pure f <*>)
-
-instance Monad m => Applicative m where
-  pure = return
-  ff <*> fa = do
-    f <- ff
-    a <- fa
-    return fa
-
-#endif
-

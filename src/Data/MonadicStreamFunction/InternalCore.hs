@@ -68,6 +68,25 @@ instance Monad m => Category (MSF m) where
     let sf' = sf2' . sf1'
     c `seq` return (c, sf')
 
+
+-- * Functor and applicative instances
+
+-- | 'Functor' instance for 'MSF's.
+instance Functor m => Functor (MSF m a) where
+  fmap f sf = MSF $ \ a -> fS <$> unMSF sf a where
+    fS (b, cont) = (f b, fmap f cont)
+
+-- | 'Applicative' instance for 'MSF's.
+--
+-- Pure: a constant MSF that always returns the given value, without effects, and continues with itself.
+--
+-- Apply: zips the outputs of a monadic stream of A => B with the  a
+instance Applicative m => Applicative (MSF m a) where
+  pure b = MSF $ \ _ -> pure (b, pure b)
+
+  sf <*> sb = MSF $ \a -> liftA2 mix (unMSF sf a) (unMSF sb a) where
+    mix (f, fcont) (b, bcont)= (f b, fcont <*> bcont)
+
 -- * Monadic computations and 'MSF's
 
 -- | Generic lifting of a morphism to the level of 'MSF's.
@@ -102,7 +121,7 @@ type InMorph m a b c = a -> m (b, c)
 
 -- | Well-formed looped connection of an output component as a future input.
 feedback :: Functor m => c -> MSF m (a, c) (b, c) -> MSF m a b
-feedback c sf = MSF $ \a -> unMSF sf (a, c) `pamf` feed where
+feedback c sf = MSF $ \a -> unMSF sf (a, c) <&> feed where
   feed ((b, c'), cont) = (b, feedback c' cont)
 
 -- * Execution/simulation
@@ -132,20 +151,6 @@ reactimate :: Monad m => MSF m () () -> m ()
 reactimate sf = do
   (_, sf') <- unMSF sf ()
   reactimate sf'
-
--- Implementation of some common operations for type-class instances, without the instances
-map_msf :: Functor m => (b -> c) -> MSF m a b -> MSF m a c
-map_msf f sf = MSF $ \ a -> fS <$> unMSF sf a where
-  fS (b, cont) = (f b, map_msf f cont)
-
--- Pure: a constant MSF that always returns the given value, without effects, and continues with itself.
-pure_msf :: Applicative m => b -> MSF m a b
-pure_msf b = MSF $ const . pure $ (b, pure_msf b)
-
--- Zips, one-by-one, the function output of first stream with the output of the second one.
-ap_msf :: Applicative m => MSF m a (b -> c) -> MSF m a b -> MSF m a c
-ap_msf sff sfb = MSF $ \a -> liftA2 mix (unMSF sff a) (unMSF sfb a) where
-  mix (f, sff') (b, sfb')= (f b, ap_msf sff' sfb')
 
 -- Raises a Kleisli-like function into an MSF,
 arrM_msf :: Functor m => (a -> m b) -> MSF m a b
@@ -177,11 +182,7 @@ mapMaybeMsf msf = MSF $ maybe ifNothing ifJust where
 -- | Applies a function to produce an additional side effect and passes the
 -- input unchanged.
 sideEffectMsf :: Functor m => (a -> m b) -> MSF m a a
-sideEffectMsf f = MSF $ \a -> f a <&> \ (_, cont) -> (a, sideEffectMsf cont)
-
--- In newer versions of Base, there is Functor. <&> operator
-pamf :: Functor m => m a -> (a -> b) -> m b
-pamf = flip fmap
+sideEffectMsf f = MSF $ \a -> f a <&> \ _ -> (a, sideEffectMsf f)
 
 -- | A natural transformation from @f@ to @g@.
 -- Copied from the natural-transformations package
